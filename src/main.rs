@@ -5,7 +5,7 @@ use std::process::exit;
 use xml::reader::{EventReader, XmlEvent};
 
 fn main() {
-    let file_path = "/Users/salihbozkaya/Documents/docs.gl/gl4";
+    let file_path = "/Users/salihbozkaya/Documents/docs.gl/gl3";
 
     let dir = fs::read_dir(file_path).unwrap_or_else(|err| {
         eprintln!("{}", err);
@@ -24,12 +24,12 @@ fn main() {
 
         let lexer = Lexer::new(&content);
 
+        println!("{:?} =>\n", path);
         for token in lexer {
-            println!("token {:?}", token);
+            println!("{} \n", token)
         }
 
-        // println!("lexers all chars {:?} ", lexer.content);
-        break;
+        println!("-------------------");
     }
 }
 
@@ -59,6 +59,10 @@ impl<'a> Lexer<'a> {
 
         while self.content[0].is_alphabetic() && self.content[n].is_alphanumeric() {
             n += 1;
+        }
+
+        if n == 0 {
+            return None;
         }
 
         let token = &self.content[0..n];
