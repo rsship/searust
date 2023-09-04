@@ -5,10 +5,11 @@ use std::path::Path;
 use std::process::exit;
 use xml::reader::{EventReader, XmlEvent};
 
-fn main() {
-    let file_path = "/Users/salihbozkaya/Documents/docs.gl/gl3";
+//NOTE: add file path you wanna search for
+const FILE_PATH: &str = "FILE PATH";
 
-    let dir = fs::read_dir(file_path).unwrap_or_else(|err| {
+fn main() {
+    let dir = fs::read_dir(FILE_PATH).unwrap_or_else(|err| {
         eprintln!("{}", err);
         exit(1);
     });
