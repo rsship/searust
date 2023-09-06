@@ -1,20 +1,25 @@
+mod config;
+
 use std::collections::HashMap;
+use std::env;
 use std::error::Error;
 use std::fs::{self, File};
 use std::path::Path;
 use std::process::exit;
 use xml::reader::{EventReader, XmlEvent};
 
-//NOTE: add file path you wanna search for
-const FILE_PATH: &str = "FILE PATH";
-
 fn main() {
-    let dir = fs::read_dir(FILE_PATH).unwrap_or_else(|err| {
+    let args: Vec<String> = env::args().collect();
+    let config = config::Config::parse(&args).unwrap_or_else(|err| {
         eprintln!("{}", err);
         exit(1);
     });
 
-    // let mut collections: HashMap<String, HashMap<String, usize>> = HashMap::new();
+    let dir = fs::read_dir(config.file_path).unwrap_or_else(|err| {
+        eprintln!("{}", err);
+        exit(1);
+    });
+
     let mut collection: HashMap<String, usize> = HashMap::new();
 
     for entry in dir {
