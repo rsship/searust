@@ -11,7 +11,7 @@ impl Config {
 
         println!("{:?}", args);
 
-        let file_path = args[0].clone();
+        let file_path = args[1].clone();
 
         let config = Config { file_path };
 
