@@ -3,35 +3,22 @@ mod lexer;
 mod util;
 
 use lexer::*;
-use std::env;
 use std::fs;
 use std::process::exit;
 use util::utils::*;
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    let config = config::Config::parse(&args).unwrap_or_else(|err| {
-        eprintln!("{}", err);
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let config = config::Config::parse().unwrap_or_else(|| {
         exit(1);
     });
-
-    let dir = fs::read_dir(config.file_path).unwrap_or_else(|err| {
-        eprintln!("{}", err);
-        exit(1);
-    });
+    let dir = fs::read_dir(config.file_path)?;
 
     let mut tf_index = TermFreqIndex::new();
 
     for entry in dir {
         let mut tf = TermFreq::new();
         let path = entry.expect("TODO:").path();
-        let content = read_entire_file(&path)
-            .unwrap_or_else(|err| {
-                eprintln!("{}", err);
-                exit(1);
-            })
-            .chars()
-            .collect::<Vec<_>>();
+        let content = read_entire_file(&path)?.chars().collect::<Vec<_>>();
 
         println!("Indexing {}... ", path.display());
 
@@ -57,8 +44,7 @@ fn main() {
 
     println!("Indexing Done...");
 
-    write_tf_to_file(tf_index).unwrap_or_else(|err| {
-        eprintln!("{}", err);
-        exit(1);
-    })
+    write_tf_to_file(tf_index)?;
+
+    Ok(())
 }
