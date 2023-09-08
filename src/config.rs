@@ -1,26 +1,28 @@
 use std::env;
+use std::path::Path;
 
 #[derive(Debug)]
-pub struct Config {
+pub struct Config<'a> {
     //NOTE: getting env variable from system ;
-    pub file_path: String,
+    pub dir: &'a Path,
 }
 
-impl Config {
-    pub fn parse() -> Option<Config> {
+impl<'a> Config<'a> {
+    pub fn parse() -> Option<Config<'a>> {
         let mut args = env::args().skip(1);
         if args.len() < 1 {
             usage();
             return None;
         }
 
-        let mut config = Config {
-            file_path: String::from(""),
-        };
         while let Some(arg) = args.next() {
             match &arg[..] {
                 "--index" => {
-                    config.file_path = arg;
+                    let config = Config {
+                        dir: Path::new(&arg),
+                    };
+
+                    Some(config);
                 }
                 "--search" => {
                     todo!("not implementd yet");
@@ -32,7 +34,7 @@ impl Config {
             }
         }
 
-        return Some(config);
+        return None;
     }
 }
 
