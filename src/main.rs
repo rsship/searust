@@ -6,17 +6,20 @@ use lexer::*;
 use std::fs::{self, DirEntry};
 use std::io;
 use std::path::Path;
-use std::process::exit;
 use util::utils::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = config::Config::parse().unwrap_or_else(|| {
-        exit(1);
-    });
+    // let config = config::Config::parse().unwrap_or_else(|| {
+    //     exit(1);
+    // });
 
-    // let tf_index = TermFreqIndex::new();
+    let config = config::Config {
+        dir: Path::new("/home/malware/docs.gl/gl4"),
+    };
 
-    let expensive = |entry: &DirEntry| {
+    let mut tf_index = TermFreqIndex::new();
+
+    let comput_tf = &mut |entry: &DirEntry| {
         let path = entry.path();
         let content = read_entire_file(&path)
             .expect("couldn't read the entire file")
@@ -43,10 +46,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats.sort_by_key(|(_, f)| *f);
         stats.reverse();
 
-        // tf_index.insert(path, tf);
+        tf_index.insert(path, tf);
     };
 
-    visit_dirs(config.dir, &expensive)?;
+    visit_dirs(config.dir, comput_tf)?;
     // let dir = fs::read_dir(config.file_path)?;
     //
     // let mut tf_index = TermFreqIndex::new();
@@ -86,7 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> {
+fn visit_dirs(dir: &Path, cb: &mut dyn FnMut(&DirEntry)) -> io::Result<()> {
     if dir.is_dir() {
         for entry in fs::read_dir(dir)? {
             let entry = entry?;
