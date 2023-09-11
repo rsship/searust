@@ -1,20 +1,49 @@
-pub struct Config {
+use std::env;
+use std::path::Path;
+
+#[derive(Debug)]
+pub struct Config<'a> {
     //NOTE: getting env variable from system ;
-    pub file_path: String,
+    pub dir: &'a Path,
 }
 
-impl Config {
-    pub fn parse(args: &Vec<String>) -> Result<Config, &'static str> {
+impl<'a> Config<'a> {
+    pub fn parse() -> Option<Config<'a>> {
+        let mut args = env::args().skip(1);
         if args.len() < 1 {
-            return Err("not enough args");
+            usage();
+            return None;
         }
 
-        println!("{:?}", args);
+        while let Some(arg) = args.next() {
+            match &arg[..] {
+                "--index" => {
+                    let config = Config {
+                        dir: Path::new(&arg),
+                    };
 
-        let file_path = args[1].clone();
+                    Some(config);
+                }
+                "--search" => {
+                    todo!("not implementd yet");
+                }
+                _ => {
+                    usage();
+                    return None;
+                }
+            }
+        }
 
-        let config = Config { file_path };
-
-        Ok(config)
+        return None;
     }
+}
+
+fn usage() {
+    let index = format!("        {}  => used to index certain directory", "--index");
+    let search = format!(
+        "       {} =>  used to search on documents that indexed before ",
+        "--search"
+    );
+
+    println!("\n{} \n\n {}\n", index, search);
 }

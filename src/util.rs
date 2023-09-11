@@ -3,8 +3,9 @@ pub mod utils {
     use serde_json;
     use std::collections::HashMap;
     use std::error::Error;
-    use std::fs::File;
-    use std::io::BufReader;
+    use std::fs;
+    use std::fs::{DirEntry, File};
+    use std::io::{self, BufReader};
     use std::path::{Path, PathBuf};
     use xml::reader::{EventReader, XmlEvent};
 
@@ -43,5 +44,32 @@ pub mod utils {
         let u: TermFreqIndex = serde_json::from_reader(reader)?;
 
         Ok(u)
+    }
+
+    pub fn walk_dir(dir: &Path, cb: &mut dyn FnMut(&DirEntry)) -> io::Result<()> {
+        if dir.is_dir() {
+            for entry in fs::read_dir(dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                let first_char = path
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .chars()
+                    .next()
+                    .unwrap();
+
+                if path.is_dir() {
+                    if first_char == '.' {
+                        continue;
+                    }
+                    walk_dir(&path, cb)?;
+                } else {
+                    cb(&entry);
+                }
+            }
+        }
+        Ok(())
     }
 }
