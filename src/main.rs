@@ -4,9 +4,10 @@ mod util;
 
 use clap::Parser;
 use lexer::*;
-use std::fs::{self, DirEntry};
-use std::io;
+use std::fs::DirEntry;
 use std::path::Path;
+use std::process::exit;
+use tiny_http::{Response, Server};
 use util::utils::*;
 
 #[derive(Parser, Debug)]
@@ -16,15 +17,13 @@ struct Args {
     index: Option<Box<Path>>,
 
     #[arg(short, long)]
-    search: Option<String>,
+    serve: Option<String>,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
+fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut tf_index = TermFreqIndex::new();
     let comput_tf = &mut |entry: &DirEntry| {
         let path = entry.path();
-
         if let Ok(content) = read_entire_file(&path) {
             let content = content.chars().collect::<Vec<_>>();
             println!("Indexing {}... ", path.display());
@@ -54,37 +53,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let index = args.index.expect("couldn't find the index location");
-    visit_dirs(&index, comput_tf)?;
+    let index = args
+        .index
+        .as_ref()
+        .expect("couldn't find the index location");
+    util::utils::walk_dir(&index, comput_tf)?;
 
-    util::utils::write_tf_to_file(tf_index)?;
-
+    util::utils::write_tf_to_file(tf_index, Some(true))?;
     Ok(())
 }
 
-fn visit_dirs(dir: &Path, cb: &mut dyn FnMut(&DirEntry)) -> io::Result<()> {
-    if dir.is_dir() {
-        for entry in fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = entry.path();
+fn serve(addr: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Listenning on port {}", addr);
+    let server = Server::http(addr).unwrap();
 
-            if path.is_dir() {
-                let first_char = path
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .chars()
-                    .next()
-                    .unwrap();
-                if first_char == '.' {
-                    continue;
-                }
-                visit_dirs(&path, cb)?;
-            } else {
-                cb(&entry);
+    for request in server.incoming_requests() {
+        match request.url() {
+            "/search" => {
+                let response = Response::from_string("hello from search");
+                request.respond(response)?;
             }
-        }
+            _ => {
+                let response = Response::from_string("hello world");
+                request.respond(response)?;
+            }
+        };
     }
     Ok(())
+}
+
+fn main() {
+    let args = Args::try_parse().unwrap_or_else(|err| {
+        eprintln!("{err}");
+        exit(1);
+    });
+
+    if args.index.is_some() {
+        indexer(&args).unwrap_or_else(|err| {
+            eprintln!("{err}");
+            exit(1);
+        })
+    }
+
+    if args.serve.is_some() {
+        let addr = &args.serve.unwrap_or("0.0.0.0:6969".to_string())[..];
+        serve(addr).unwrap_or_else(|err| {
+            eprintln!("{err}");
+            exit(1);
+        })
+    }
 }

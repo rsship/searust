@@ -27,13 +27,19 @@ pub mod utils {
         Ok(content)
     }
 
-    pub fn write_tf_to_file(tf_index: TermFreqIndex) -> Result<(), Box<dyn Error>> {
+    pub fn write_tf_to_file(
+        tf_index: TermFreqIndex,
+        pretty: Option<bool>,
+    ) -> Result<(), Box<dyn Error>> {
         println!("Saving to JSON");
 
-        let result = serde_json::to_string(&tf_index)?;
         let file = File::create(JSON_FILE_PATH)?;
-        serde_json::to_writer(file, &result)?;
-
+        let pretty = pretty.unwrap_or(false);
+        if pretty {
+            serde_json::to_writer_pretty(file, &tf_index)?;
+        } else {
+            serde_json::to_writer(file, &tf_index)?;
+        }
         Ok(())
     }
 
