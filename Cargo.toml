@@ -1,5 +1,5 @@
 [package]
-name = "localsearch"
+name = "searust"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,4 +9,5 @@ edition = "2021"
 xml-rs = "0.8.16"
 serde_json = "1.0.105"
 clap = { version = "4.4.2", features = ["derive"] }
+tiny_http = "0.11"
 
