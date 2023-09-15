@@ -1,49 +1,38 @@
+use field_accessor::FieldAccessor;
+use std::collections::HashMap;
 use std::env;
-use std::path::Path;
 
-#[derive(Debug)]
-pub struct Config<'a> {
-    //NOTE: getting env variable from system ;
-    pub dir: &'a Path,
+#[derive(FieldAccessor, Debug)]
+pub struct Args {
+    pub index: String,
+    pub serve: String,
 }
 
-impl<'a> Config<'a> {
-    pub fn parse() -> Option<Config<'a>> {
-        let mut args = env::args().skip(1);
-        if args.len() < 1 {
-            usage();
-            return None;
+impl Args {
+    fn new_empty() -> Self {
+        Args {
+            index: "".to_string(),
+            serve: "".to_string(),
         }
-
-        while let Some(arg) = args.next() {
-            match &arg[..] {
-                "--index" => {
-                    let config = Config {
-                        dir: Path::new(&arg),
-                    };
-
-                    Some(config);
-                }
-                "--search" => {
-                    todo!("not implementd yet");
-                }
-                _ => {
-                    usage();
-                    return None;
-                }
+    }
+    pub fn parse() -> Self {
+        let mut args_table = HashMap::<String, String>::new();
+        let mut args = env::args().skip(1);
+        while args.len() > 0 {
+            let arg = args.next().unwrap();
+            if arg.contains("--") {
+                args_table.insert(arg[2..].to_string(), args.next().unwrap());
             }
         }
 
-        return None;
+        let mut args = Self::new_empty();
+
+        for (k, v) in args_table {
+            if let Ok(_) = args.get(&k) {
+                args.set(&k, v).unwrap();
+            }
+        }
+
+        args
     }
-}
-
-fn usage() {
-    let index = format!("        {}  => used to index certain directory", "--index");
-    let search = format!(
-        "       {} =>  used to search on documents that indexed before ",
-        "--search"
-    );
-
-    println!("\n{} \n\n {}\n", index, search);
 }

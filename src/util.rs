@@ -1,5 +1,4 @@
 pub mod utils {
-
     use serde_json;
     use std::collections::HashMap;
     use std::error::Error;
@@ -16,7 +15,7 @@ pub mod utils {
 
     pub fn read_entire_file<P: AsRef<Path>>(file_path: P) -> Result<String, Box<dyn Error>> {
         let file = File::open(file_path)?;
-        let er = EventReader::new(file);
+        let er = EventReader::new(BufReader::new(file));
         let mut content = String::new();
 
         for event in er.into_iter() {
@@ -41,15 +40,6 @@ pub mod utils {
             serde_json::to_writer(file, &tf_index)?;
         }
         Ok(())
-    }
-
-    pub fn read_tf_from_json() -> Result<TermFreqIndex, Box<dyn Error>> {
-        let json_file = File::open(JSON_FILE_PATH)?;
-        let reader = BufReader::new(json_file);
-
-        let u: TermFreqIndex = serde_json::from_reader(reader)?;
-
-        Ok(u)
     }
 
     pub fn walk_dir(dir: &Path, cb: &mut dyn FnMut(&DirEntry)) -> io::Result<()> {
