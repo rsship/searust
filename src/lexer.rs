@@ -13,13 +13,16 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn chop(&mut self, idx: usize) -> &'a [char] {
+    fn chop(&mut self, idx: usize) -> String {
         let token = &self.content[0..idx];
         self.content = &self.content[idx..];
-        return token;
+        token
+            .into_iter()
+            .map(|x| x.to_ascii_lowercase())
+            .collect::<String>()
     }
 
-    fn chop_while<P>(&mut self, mut predicate: P) -> &'a [char]
+    fn chop_while<P>(&mut self, mut predicate: P) -> String
     where
         P: FnMut(&char) -> bool,
     {
@@ -31,10 +34,10 @@ impl<'a> Lexer<'a> {
         return self.chop(n);
     }
 
-    pub fn next_token(&mut self) -> Option<&'a [char]> {
+    pub fn next_token(&mut self) -> Option<String> {
         self.trim_left();
 
-        if self.content.len() == 0 {
+        if self.content.is_empty() {
             return None;
         }
 
@@ -51,7 +54,7 @@ impl<'a> Lexer<'a> {
 }
 
 impl<'a> Iterator for Lexer<'a> {
-    type Item = &'a [char];
+    type Item = String;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         self.next_token()
     }
