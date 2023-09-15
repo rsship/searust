@@ -8,6 +8,6 @@ edition = "2021"
 [dependencies]
 xml-rs = "0.8.16"
 serde_json = "1.0.105"
-clap = { version = "4.4.2", features = ["derive"] }
 tiny_http = "0.11"
+field_accessor = "0.5.2"
 
