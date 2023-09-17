@@ -34,6 +34,7 @@
       <form class="form">
         <div class="container">
           <input class="input"></input>
+          <div class="path"></div>
         </div>
       </form>
     </div>
@@ -46,7 +47,9 @@
           method: "POST",
           body: input.value
         }).then((resp) => {
-            console.log(resp); 
+          return resp.json()
+        }).then((parsed_data) => {
+          const divPath = document.querySelector(".path");
         }).catch(err => {
           console.error(err);
         })
