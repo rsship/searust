@@ -5,3 +5,37 @@ index.json
 /test_docs
 benchmark.md
 .DS_Store
+
+
+/searust-ui/node_modules
+/searust-ui/.pnp
+/searust-ui/.pnp.js
+
+# testing
+/searust-ui/coverage
+
+# next.js
+/searust-ui/.next/
+/searust-ui/out/
+
+# production
+/searust-ui/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+/searust-ui/npm-debug.log*
+/searust-ui/yarn-debug.log*
+/searust-ui/yarn-error.log*
+
+# local env files
+/searust-ui/.env*.local
+
+# vercel
+/searust-ui/.vercel
+
+# typescript
+/searust-ui/*.tsbuildinfo
+/searust-ui/next-env.d.ts

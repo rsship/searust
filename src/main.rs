@@ -5,7 +5,6 @@ mod util;
 use config::*;
 use lexer::*;
 use std::fs::DirEntry;
-use std::fs::File;
 use std::path::Path;
 use std::process::exit;
 use tiny_http::{Response, Server};
@@ -13,7 +12,7 @@ use util::utils::*;
 
 fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut tf_index = TermFreqIndex::new();
-    let compute_tf = &mut |entry: &DirEntry| {
+    let tf = &mut |entry: &DirEntry| {
         let path = entry.path();
         if let Ok(content) = read_entire_file(&path) {
             let content = content.chars().collect::<Vec<_>>();
@@ -40,7 +39,7 @@ fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    walk_dir(Path::new(&args.index), compute_tf)?;
+    walk_dir(Path::new(&args.index), tf)?;
 
     write_tf_to_file(tf_index, None)?;
     Ok(())
@@ -63,16 +62,21 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
 
                         let user_tokens = lexer.collect::<Vec<_>>();
                         let tf_index = read_tf_index(Path::new(&args.serve))?;
-                        let mut result = Vec::<(&Path, f32)>::new();
+
+                        let mut result = Vec::<(&Path, f32)>::with_capacity(10);
+
                         for (path, tf) in &tf_index {
                             let mut rank = 0f32;
                             for token in &user_tokens {
                                 rank += compute_tf(&tf, &token) * compute_idf(&tf_index, &token);
                             }
-                            result.push((path, rank));
+                            if rank > 0f32 {
+                                result.push((path, rank))
+                            }
                         }
 
                         result.sort_by(|(_, rank), (_, rank2)| rank2.partial_cmp(rank).unwrap());
+                        result.truncate(10);
                         let result = serde_json::to_string(&result)?;
 
                         //NOTE: part of the sending response back to client;
@@ -85,14 +89,6 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     _ => {
                         todo!("not impelemented yet");
-                    }
-                };
-            }
-            tiny_http::Method::Get => {
-                match request.url() {
-                    _ => {
-                        let html_file = File::open("./index.html")?;
-                        request.respond(Response::from_file(html_file))?;
                     }
                 };
             }
