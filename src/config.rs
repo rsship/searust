@@ -21,7 +21,7 @@ impl Args {
         while args.len() > 0 {
             let arg = args.next().unwrap();
             if arg.contains("--") {
-                args_table.insert(arg[2..].to_string(), args.next().unwrap());
+                args_table.insert(arg[2..].to_string(), args.next().unwrap_or("".to_string()));
             }
         }
 
@@ -34,5 +34,13 @@ impl Args {
         }
 
         args
+    }
+
+    pub fn usage() {
+        println!();
+        println!("{}", "commands");
+        println!("     {} {}   ", "--index", "<DIR>");
+        println!("     {} {}   ", "--serve", "JSON file");
+        println!();
     }
 }
