@@ -27,7 +27,7 @@ fn compute_idf(tf_index: &TermFreqIndex, token: &str) -> f32 {
         }
     }
 
-    ((total_doc + 1 as f32) / count as f32).log10()
+    ((total_doc + 1 as f32) / (1 + count) as f32).log10()
 }
 
 fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
@@ -95,7 +95,6 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
                             for token in &user_tokens {
                                 rank += compute_tf(&tf, &token) * compute_idf(&tf_index, &token);
                             }
-                            println!();
                             result.push((path, rank));
                         }
 

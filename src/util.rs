@@ -4,7 +4,7 @@ pub mod utils {
     use std::error::Error;
     use std::fs;
     use std::fs::{DirEntry, File};
-    use std::io::{self, BufReader};
+    use std::io::{self, BufReader, BufWriter};
     use std::path::{Path, PathBuf};
     use xml::reader::{EventReader, XmlEvent};
 
@@ -35,9 +35,9 @@ pub mod utils {
         let file = File::create(JSON_FILE_PATH)?;
         let pretty = pretty.unwrap_or(false);
         if pretty {
-            serde_json::to_writer_pretty(file, &tf_index)?;
+            serde_json::to_writer_pretty(BufWriter::new(file), &tf_index)?;
         } else {
-            serde_json::to_writer(file, &tf_index)?;
+            serde_json::to_writer(BufWriter::new(file), &tf_index)?;
         }
         Ok(())
     }
