@@ -6,29 +6,10 @@ use config::*;
 use lexer::*;
 use std::fs::DirEntry;
 use std::fs::File;
-use std::io::BufReader;
 use std::path::Path;
 use std::process::exit;
 use tiny_http::{Response, Server};
 use util::utils::*;
-
-fn compute_tf(tf: &TermFreq, token: &str) -> f32 {
-    let n = *tf.get(token).unwrap_or(&0) as f32;
-    let m = tf.into_iter().map(|(_, t)| t).sum::<usize>() as f32;
-    n / m
-}
-
-fn compute_idf(tf_index: &TermFreqIndex, token: &str) -> f32 {
-    let total_doc = tf_index.len() as f32;
-    let mut count = 0;
-    for (_, tf) in tf_index {
-        if tf.contains_key(token) {
-            count += 1;
-        }
-    }
-
-    ((total_doc + 1 as f32) / (1 + count) as f32).log10()
-}
 
 fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut tf_index = TermFreqIndex::new();
@@ -59,17 +40,10 @@ fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    util::utils::walk_dir(Path::new(&args.index), compute_tf)?;
+    walk_dir(Path::new(&args.index), compute_tf)?;
 
-    util::utils::write_tf_to_file(tf_index, None)?;
+    write_tf_to_file(tf_index, None)?;
     Ok(())
-}
-
-fn read_tf_index(index_path: &Path) -> Result<TermFreqIndex, Box<dyn std::error::Error>> {
-    let file = File::open(index_path)?;
-    let tf_index = serde_json::from_reader::<_, TermFreqIndex>(BufReader::new(file))?;
-
-    Ok(tf_index)
 }
 
 fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
@@ -145,5 +119,9 @@ fn main() {
             eprintln!("{err}");
             exit(1);
         })
+    }
+
+    if args.serve.is_empty() && args.index.is_empty() {
+        Args::usage();
     }
 }
