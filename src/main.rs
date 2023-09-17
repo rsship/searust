@@ -84,7 +84,7 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
                         request.respond(response)?;
                     }
                     _ => {
-                        request.respond(Response::from_string("google is best"))?;
+                        todo!("not impelemented yet");
                     }
                 };
             }
@@ -97,7 +97,7 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
                 };
             }
             _ => {
-                println!("unknown request type");
+                todo!("not implemented yet");
             }
         }
     }
