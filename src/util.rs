@@ -68,4 +68,31 @@ pub mod utils {
         }
         Ok(())
     }
+
+    pub fn compute_tf(tf: &TermFreq, token: &str) -> f32 {
+        let n = *tf.get(token).unwrap_or(&0) as f32;
+        let m = tf.into_iter().map(|(_, t)| t).sum::<usize>() as f32;
+        n / m
+    }
+
+    pub fn compute_idf(tf_index: &TermFreqIndex, token: &str) -> f32 {
+        let total_doc = tf_index.len();
+        let mut m = 0;
+
+        //NOTE: imperatirve way of the count containinig key
+        for (_, tf) in tf_index {
+            if tf.contains_key(token) {
+                m += 1;
+            }
+        }
+
+        ((total_doc + 1) as f32 / (m + 1) as f32).log10()
+    }
+
+    pub fn read_tf_index(index_path: &Path) -> Result<TermFreqIndex, Box<dyn std::error::Error>> {
+        let file = File::open(index_path)?;
+        let tf_index = serde_json::from_reader::<_, TermFreqIndex>(BufReader::new(file))?;
+
+        Ok(tf_index)
+    }
 }
