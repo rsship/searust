@@ -8,15 +8,27 @@ use std::fs::DirEntry;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
-use std::path::PathBuf;
 use std::process::exit;
 use tiny_http::{Response, Server};
 use util::utils::*;
 
-fn compute_tf(tf: &TermFreq, token: String) {
-    let n = tf.get(&token).unwrap_or(&0);
+fn compute_tf(tf: &TermFreq, token: &str) -> f32 {
+    let n = *tf.get(token).unwrap_or(&0) as f32;
+    let m = tf.into_iter().map(|(_, t)| t).sum::<usize>() as f32;
+    n / m
 }
-fn compute_idf(it_index: &TermFreqIndex) {}
+
+fn compute_idf(tf_index: &TermFreqIndex, token: &str) -> f32 {
+    let total_doc = tf_index.len() as f32;
+    let mut count = 0;
+    for (_, tf) in tf_index {
+        if tf.contains_key(token) {
+            count += 1;
+        }
+    }
+
+    ((total_doc + 1 as f32) / count as f32).log10()
+}
 
 fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut tf_index = TermFreqIndex::new();
@@ -53,7 +65,7 @@ fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn read_tf_index(index_path: &PathBuf) -> Result<TermFreqIndex, Box<dyn std::error::Error>> {
+fn read_tf_index(index_path: &Path) -> Result<TermFreqIndex, Box<dyn std::error::Error>> {
     let file = File::open(index_path)?;
     let tf_index = serde_json::from_reader::<_, TermFreqIndex>(BufReader::new(file))?;
 
@@ -72,15 +84,26 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
                     "/search" => {
                         let mut content = String::new();
                         request.as_reader().read_to_string(&mut content).unwrap();
-                        let json: String = content.parse().unwrap();
-                        let foo = json.chars().collect::<Vec<_>>();
-                        let lexer = Lexer::new(&foo);
+                        let content = content.chars().collect::<Vec<_>>();
+                        let lexer = Lexer::new(&content);
 
                         let user_tokens = lexer.collect::<Vec<_>>();
-                        // let tf_index = read_tf_index();
+                        let tf_index = read_tf_index(Path::new(&args.serve))?;
+                        let mut result = Vec::<(&Path, f32)>::new();
+                        for (path, tf) in &tf_index {
+                            let mut rank = 0f32;
+                            for token in &user_tokens {
+                                rank += compute_tf(&tf, &token) * compute_idf(&tf_index, &token);
+                            }
+                            println!();
+                            result.push((path, rank));
+                        }
+
+                        result.sort_by(|(_, rank), (_, rank2)| rank2.partial_cmp(rank).unwrap());
+                        let result = serde_json::to_string(&result)?;
 
                         //NOTE: part of the sending response back to client;
-                        let response = Response::from_string("tf-idf").with_header(
+                        let response = Response::from_string(result).with_header(
                             "Access-Control-Allow-Origin: *"
                                 .parse::<tiny_http::Header>()
                                 .unwrap(),
