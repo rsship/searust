@@ -15,8 +15,9 @@ export const useFetch = (url) => {
       const rawData = await resp.json();
       setData(rawData);
     }catch(e) {
-        setLoading(false);
         setError(e);
+    } finally {
+        setLoading(false);
     }
   }
   
@@ -26,5 +27,4 @@ export const useFetch = (url) => {
   }
 
 }
-
 
