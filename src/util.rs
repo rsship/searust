@@ -1,17 +1,12 @@
 pub mod utils {
+    use crate::indexer::Model;
     use serde_json;
-    use std::collections::HashMap;
     use std::error::Error;
     use std::fs;
     use std::fs::{DirEntry, File};
     use std::io::{self, BufReader, BufWriter};
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use xml::reader::{EventReader, XmlEvent};
-
-    const JSON_FILE_PATH: &str = "index.json";
-
-    pub type TermFreq = HashMap<String, usize>;
-    pub type TermFreqIndex = HashMap<PathBuf, TermFreq>;
 
     pub fn read_entire_file<P: AsRef<Path>>(file_path: P) -> Result<String, Box<dyn Error>> {
         let file = File::open(file_path)?;
@@ -26,18 +21,15 @@ pub mod utils {
         Ok(content)
     }
 
-    pub fn write_tf_to_file(
-        tf_index: TermFreqIndex,
-        pretty: Option<bool>,
-    ) -> Result<(), Box<dyn Error>> {
+    pub fn save_model(model: &Model, pretty: Option<bool>) -> Result<(), Box<dyn Error>> {
         println!("Saving to JSON");
 
-        let file = File::create(JSON_FILE_PATH)?;
+        let file = File::create("index.json")?;
         let pretty = pretty.unwrap_or(false);
         if pretty {
-            serde_json::to_writer_pretty(BufWriter::new(file), &tf_index)?;
+            serde_json::to_writer_pretty(BufWriter::new(file), model)?;
         } else {
-            serde_json::to_writer(BufWriter::new(file), &tf_index)?;
+            serde_json::to_writer(BufWriter::new(file), model)?;
         }
         Ok(())
     }
@@ -69,30 +61,10 @@ pub mod utils {
         Ok(())
     }
 
-    pub fn compute_tf(tf: &TermFreq, token: &str) -> f32 {
-        let n = *tf.get(token).unwrap_or(&0) as f32;
-        let m = tf.into_iter().map(|(_, t)| t).sum::<usize>() as f32;
-        n / m
-    }
-
-    pub fn compute_idf(tf_index: &TermFreqIndex, token: &str) -> f32 {
-        let total_doc = tf_index.len();
-        let mut m = 0;
-
-        //NOTE: imperatirve way of the count containinig key
-        for (_, tf) in tf_index {
-            if tf.contains_key(token) {
-                m += 1;
-            }
-        }
-
-        ((total_doc + 1) as f32 / (m + 1) as f32).log10()
-    }
-
-    pub fn read_tf_index(index_path: &Path) -> Result<TermFreqIndex, Box<dyn std::error::Error>> {
+    pub fn read_from_model(index_path: &Path) -> Result<Model, Box<dyn std::error::Error>> {
         let file = File::open(index_path)?;
-        let tf_index = serde_json::from_reader::<_, TermFreqIndex>(BufReader::new(file))?;
+        let model = serde_json::from_reader::<_, Model>(BufReader::new(file))?;
 
-        Ok(tf_index)
+        Ok(model)
     }
 }
