@@ -5,29 +5,22 @@ mod util;
 
 use config::*;
 use indexer::Model;
-use std::fs::DirEntry;
 use std::path::Path;
 use std::process::exit;
 use tiny_http::{Response, Server};
 
 fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut model = Model::new();
+    let file_dir = Path::new(&args.index);
 
-    util::utils::walk_dir(Path::new(&args.index), &mut |entry: &DirEntry| {
-        let path = entry.path();
-        if let Ok(content) = util::utils::read_entire_file(&path) {
-            let content = content.chars().collect::<Vec<_>>();
-            println!("Indexing {path} ... ", path = path.display());
-            model.add_doc(path, &content);
-        } else {
-            println!("unkown format: {:?}", path);
-        }
-    })?;
-    util::utils::save_model(&model, None)?;
+    model.walk_dir(file_dir)?;
+
+    if let Some(file_name) = file_dir.file_name() {
+        model.save_model(file_name.to_str().unwrap())?;
+    }
 
     Ok(())
 }
-
 fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let addr = "127.0.0.1:6969";
     println!("\n Listenning on port  {addr} \n");
@@ -41,7 +34,7 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
                         let mut content = String::new();
                         request.as_reader().read_to_string(&mut content).unwrap();
                         let content = content.chars().collect::<Vec<_>>();
-                        let model = util::utils::read_from_model(Path::new(&args.serve))?;
+                        let model = util::read_from_model(Path::new(&args.serve))?;
                         let result = model.search_query(&content);
 
                         let result = serde_json::to_string(&result)?;

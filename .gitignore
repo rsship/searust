@@ -1,6 +1,5 @@
 /target
 Makefile
-index.json
 /docs.gl
 /test_docs
 benchmark.md
@@ -39,3 +38,4 @@ benchmark.md
 # typescript
 /searust-ui/*.tsbuildinfo
 /searust-ui/next-env.d.ts
+docs.gl.json
