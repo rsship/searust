@@ -13,12 +13,16 @@ fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut model = Model::new();
     let file_dir = Path::new(&args.index);
 
-    if model.docs.is_empty() {
+    let file_name = file_dir.file_name().unwrap().to_str().unwrap();
+    let file_name = format!("{}.json", file_name);
+    let file_name = Path::new(&file_name);
+
+    let is_exists = util::try_exists(file_name).unwrap();
+
+    if is_exists {
         //NOTE warm up the cache
         println!("Loading model from file");
-        let file_name = file_dir.file_name().unwrap().to_str().unwrap();
-        let full_file_name = format!("{}.json", file_name);
-        model = util::load_model_from_file(Path::new(&full_file_name))?;
+        model = util::load_model_from_file(file_name)?;
     }
 
     model.walk_dir(file_dir)?;
