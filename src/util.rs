@@ -55,7 +55,7 @@ fn walk_dir(dir: &Path, cb: &mut dyn FnMut(&DirEntry)) -> io::Result<()> {
     Ok(())
 }
 
-pub fn read_from_model(index_path: &Path) -> Result<Model, Box<dyn std::error::Error>> {
+pub fn load_model_from_file(index_path: &Path) -> Result<Model, Box<dyn std::error::Error>> {
     let file = File::open(index_path)?;
     let model = serde_json::from_reader::<_, Model>(BufReader::new(file))?;
 

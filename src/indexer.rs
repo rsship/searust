@@ -38,18 +38,6 @@ impl Model {
         }
     }
 
-    pub fn requires_reindex() {}
-
-    pub fn remove_doc(&mut self, file_path: PathBuf) {
-        if let Some(doc) = self.docs.remove(&file_path) {
-            for (t, _) in doc.tf {
-                if let Some(v) = self.df.get_mut(&t) {
-                    *v -= 1;
-                }
-            }
-        }
-    }
-
     pub fn walk_dir(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         'looper: for entry in fs::read_dir(dir_path)? {
             let entry = entry?;
@@ -64,8 +52,8 @@ impl Model {
 
             if let Ok(content) = util::read_entire_file(&path) {
                 let content = content.chars().collect::<Vec<_>>();
-                println!("Indexing {path}", path = path.display());
-                self.add_doc(path, &content, last_modified);
+                self.add_doc(&path, &content, last_modified)
+                    .map_err(|err| format!("got an error: {:?}", err))?;
             } else {
                 println!("Unknown format: {path}", path = path.display());
             }
@@ -73,7 +61,35 @@ impl Model {
         Ok(())
     }
 
-    pub fn add_doc(&mut self, file_path: PathBuf, content: &[char], last_modified: SystemTime) {
+    pub fn remove_doc(&mut self, file_path: &PathBuf) {
+        if let Some(doc) = self.docs.remove(file_path) {
+            for (t, _) in doc.tf {
+                if let Some(v) = self.df.get_mut(&t) {
+                    *v -= 1;
+                }
+            }
+        }
+    }
+
+    pub fn add_doc(
+        &mut self,
+        file_path: &PathBuf,
+        content: &[char],
+        last_modified: SystemTime,
+    ) -> Result<(), ()> {
+        if let Some(doc) = self.docs.get(file_path) {
+            if doc.last_modified >= last_modified {
+                println!("Already indexed");
+                return Ok(());
+            }
+
+            println!("file changed Reindexing {:?}", last_modified);
+
+            self.remove_doc(file_path);
+        }
+
+        println!("Indexing {path}", path = file_path.display());
+
         let mut tf = TermFreq::new();
         for token in lexer::Lexer::new(content) {
             if let Some(term) = tf.get_mut(&token) {
@@ -92,13 +108,15 @@ impl Model {
         }
 
         self.docs.insert(
-            file_path,
+            file_path.to_path_buf(),
             Doc {
                 tf,
                 total: content.len(),
                 last_modified: last_modified,
             },
         );
+
+        Ok(())
     }
 
     pub fn search_query(&self, req_val: &[char]) -> Vec<(&PathBuf, f32)> {
