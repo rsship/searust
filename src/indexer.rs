@@ -22,16 +22,6 @@ pub struct Doc {
     last_modified: SystemTime,
 }
 
-impl Doc {
-    pub fn new(tf: TermFreq, total: usize) -> Self {
-        Self {
-            tf,
-            total,
-            last_modified: SystemTime::now(),
-        }
-    }
-}
-
 type Docs = HashMap<PathBuf, Doc>;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -69,10 +59,13 @@ impl Model {
                 continue 'looper;
             }
 
+            let metadata = dir_path.metadata().map_err(|_| "couldn't get metadata")?;
+            let last_modified = metadata.modified()?;
+
             if let Ok(content) = util::read_entire_file(&path) {
                 let content = content.chars().collect::<Vec<_>>();
                 println!("Indexing {path}", path = path.display());
-                self.add_doc(path, &content);
+                self.add_doc(path, &content, last_modified);
             } else {
                 println!("Unknown format: {path}", path = path.display());
             }
@@ -80,7 +73,7 @@ impl Model {
         Ok(())
     }
 
-    pub fn add_doc(&mut self, file_path: PathBuf, content: &[char]) {
+    pub fn add_doc(&mut self, file_path: PathBuf, content: &[char], last_modified: SystemTime) {
         let mut tf = TermFreq::new();
         for token in lexer::Lexer::new(content) {
             if let Some(term) = tf.get_mut(&token) {
@@ -98,7 +91,14 @@ impl Model {
             }
         }
 
-        self.docs.insert(file_path, Doc::new(tf, content.len()));
+        self.docs.insert(
+            file_path,
+            Doc {
+                tf,
+                total: content.len(),
+                last_modified: last_modified,
+            },
+        );
     }
 
     pub fn search_query(&self, req_val: &[char]) -> Vec<(&PathBuf, f32)> {
@@ -119,10 +119,16 @@ impl Model {
         result
     }
 
-    pub fn save_model(&self, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let file = File::create(format!("{}.json", file_name))?;
+    pub fn save_model(&self, dir_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+        println!("Saving Model...");
+        let full_file_name = format!("{}.json", dir_name);
 
-        serde_json::to_writer(BufWriter::new(file), self)?;
+        let is_exists = util::try_exists(Path::new(&full_file_name))?;
+        if !is_exists {
+            let file = File::create(&full_file_name)?;
+            serde_json::to_writer(BufWriter::new(file), self)?;
+            println!("Saving Model Done");
+        }
 
         Ok(())
     }
