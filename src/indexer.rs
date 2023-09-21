@@ -1,8 +1,14 @@
-use crate::lexer;
+use super::util;
+
+use super::lexer;
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::fs;
+use std::fs::File;
+use std::io::BufWriter;
+use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 const MAX_AMOUNT: usize = 10;
 
@@ -13,11 +19,16 @@ type DocFreq = HashMap<String, usize>;
 pub struct Doc {
     tf: TermFreq,
     total: usize,
+    last_modified: SystemTime,
 }
 
 impl Doc {
     pub fn new(tf: TermFreq, total: usize) -> Self {
-        Self { tf, total }
+        Self {
+            tf,
+            total,
+            last_modified: SystemTime::now(),
+        }
     }
 }
 
@@ -26,7 +37,7 @@ type Docs = HashMap<PathBuf, Doc>;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Model {
     pub docs: Docs,
-    pub df: DocFreq,
+    df: DocFreq,
 }
 
 impl Model {
@@ -35,6 +46,38 @@ impl Model {
             docs: HashMap::new(),
             df: HashMap::new(),
         }
+    }
+
+    pub fn requires_reindex() {}
+
+    pub fn remove_doc(&mut self, file_path: PathBuf) {
+        if let Some(doc) = self.docs.remove(&file_path) {
+            for (t, _) in doc.tf {
+                if let Some(v) = self.df.get_mut(&t) {
+                    *v -= 1;
+                }
+            }
+        }
+    }
+
+    pub fn walk_dir(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+        'looper: for entry in fs::read_dir(dir_path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                self.walk_dir(&path)?;
+                continue 'looper;
+            }
+
+            if let Ok(content) = util::read_entire_file(&path) {
+                let content = content.chars().collect::<Vec<_>>();
+                println!("Indexing {path}", path = path.display());
+                self.add_doc(path, &content);
+            } else {
+                println!("Unknown format: {path}", path = path.display());
+            }
+        }
+        Ok(())
     }
 
     pub fn add_doc(&mut self, file_path: PathBuf, content: &[char]) {
@@ -74,6 +117,14 @@ impl Model {
         result.sort_by(|(_, freq1), (_, freq2)| freq2.partial_cmp(freq1).unwrap());
         result.truncate(MAX_AMOUNT);
         result
+    }
+
+    pub fn save_model(&self, file_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let file = File::create(format!("{}.json", file_name))?;
+
+        serde_json::to_writer(BufWriter::new(file), self)?;
+
+        Ok(())
     }
 }
 
