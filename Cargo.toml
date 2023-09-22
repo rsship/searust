@@ -2,6 +2,11 @@
 name = "searust"
 version = "0.1.0"
 edition = "2021"
+authors = ["Salih Bozkaya  <bozkayasalih01x@gmail.com>"]
+description = "a local search engine. Written in Rust"
+repository = "https://rsship/searust"
+license = "MIT"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
