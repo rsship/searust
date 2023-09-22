@@ -9,6 +9,8 @@ use std::path::Path;
 use std::process::exit;
 use tiny_http::{Response, Server};
 
+fn maker() {}
+
 fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut model = Model::new();
     let file_dir = Path::new(&args.index);
