@@ -13,6 +13,18 @@ fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut model = Model::new();
     let file_dir = Path::new(&args.index);
 
+    let file_name = file_dir.file_name().unwrap().to_str().unwrap();
+    let file_name = format!("{}.json", file_name);
+    let file_name = Path::new(&file_name);
+
+    let is_exists = util::try_exists(file_name).unwrap();
+
+    if is_exists {
+        //NOTE warm up the cache
+        println!("Loading model from file");
+        model = util::load_model_from_file(file_name)?;
+    }
+
     model.walk_dir(file_dir)?;
 
     if let Some(file_name) = file_dir.file_name() {
@@ -21,6 +33,7 @@ fn indexer(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
 fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let addr = "127.0.0.1:6969";
     println!("\n Listenning on port  {addr} \n");
@@ -34,7 +47,7 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
                         let mut content = String::new();
                         request.as_reader().read_to_string(&mut content).unwrap();
                         let content = content.chars().collect::<Vec<_>>();
-                        let model = util::read_from_model(Path::new(&args.serve))?;
+                        let model = util::load_model_from_file(Path::new(&args.serve))?;
                         let result = model.search_query(&content);
 
                         let result = serde_json::to_string(&result)?;
