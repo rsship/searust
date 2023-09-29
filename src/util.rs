@@ -4,7 +4,7 @@ use std::error::Error;
 use std::fs;
 use std::fs::{DirEntry, File};
 use std::io::{self, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use xml::reader::{EventReader, XmlEvent};
 
 pub fn read_entire_file<P: AsRef<Path>>(file_path: P) -> Result<String, Box<dyn Error>> {
@@ -60,4 +60,11 @@ pub fn load_model_from_file(index_path: &Path) -> Result<Model, Box<dyn std::err
     let model = serde_json::from_reader::<_, Model>(BufReader::new(file))?;
 
     Ok(model)
+}
+
+pub fn str_to_path(index_file: &str) -> PathBuf {
+    let foo = Path::new(index_file).file_name().unwrap().to_str().unwrap();
+    let index_path = format!("{}.json", foo);
+    let index_path = Path::new(&index_path);
+    index_path.to_path_buf()
 }

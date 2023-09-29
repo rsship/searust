@@ -24,7 +24,7 @@ pub struct Doc {
 
 type Docs = HashMap<PathBuf, Doc>;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Model {
     pub docs: Docs,
     df: DocFreq,
@@ -137,16 +137,12 @@ impl Model {
         result
     }
 
-    pub fn save_model(&self, dir_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save_model(&self, file_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         println!("Saving Model...");
-        let full_file_name = format!("{}.json", dir_name);
 
-        let is_exists = util::try_exists(Path::new(&full_file_name))?;
-        if !is_exists {
-            let file = File::create(&full_file_name)?;
-            serde_json::to_writer(BufWriter::new(file), self)?;
-            println!("Saving Model Done");
-        }
+        let file = File::create(file_path)?;
+        serde_json::to_writer(BufWriter::new(file), self)?;
+        println!("Saving Model Done");
 
         Ok(())
     }

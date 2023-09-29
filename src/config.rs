@@ -4,14 +4,12 @@ use std::env;
 
 #[derive(FieldAccessor, Debug)]
 pub struct Args {
-    pub index: String,
     pub serve: String,
 }
 
 impl Args {
     fn new_empty() -> Self {
         Args {
-            index: "".to_string(),
             serve: "".to_string(),
         }
     }
