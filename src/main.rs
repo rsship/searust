@@ -5,11 +5,24 @@ mod util;
 
 use config::*;
 use indexer::Model;
+use std::error;
+use std::fmt;
 use std::path::Path;
 use std::process::exit;
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use tiny_http::{Response, Server};
+
+#[derive(Debug, Clone)]
+struct CustomErr;
+
+impl fmt::Display for CustomErr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ERROR: {}", self)
+    }
+}
+
+impl error::Error for CustomErr {}
 
 fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let addr = "127.0.0.1:6969";
@@ -36,31 +49,27 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
                             model = Arc::new(Mutex::new(Default::default()));
                         }
 
+                        let (tx, rx) = mpsc::channel();
+
                         {
                             let model = Arc::clone(&model);
                             let p_path = Path::new(&args.serve).to_path_buf();
                             thread::spawn(move || {
                                 let mut model = model.lock().unwrap();
-                                match model.walk_dir(&p_path) {
-                                    Err(err) => {
-                                        eprintln!("got an error: {}", err);
-                                    }
-                                    Ok(_) => {
-                                        println!("indexed every dir");
-                                        match model.save_model(&json_path) {
-                                            Ok(()) => {
-                                                println!(
-                                                    "saved to  {path}",
-                                                    path = p_path.display()
-                                                );
-                                            }
-                                            Err(err) => {
-                                                eprintln!("GOT an ERROR: {:?}", err)
-                                            }
-                                        }
-                                    }
+                                if model.walk_dir(&p_path).is_err() {
+                                    tx.send(format!("couldn't index: {}", p_path.display()))
+                                        .unwrap();
+                                }
+                                if model.save_model(&json_path).is_err() {
+                                    tx.send(format!("couldn't save: {}", p_path.display()))
+                                        .unwrap();
                                 }
                             });
+                        }
+
+                        for received in rx {
+                            println!("{}", received);
+                            exit(1);
                         }
 
                         let model = Arc::clone(&model);
