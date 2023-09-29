@@ -1,2 +1,14 @@
-# SeaRust (local version of Google)
-### this repo still in development DONT USE IT PRODUCTION PURPOSES
+# SeaRust (local search engine)
+
+
+```bash
+    cargo run --release -- --serve <DIR>
+```
+
+#### you can even spin up ui to interactive with engine
+
+```bash
+    cd searustui
+    bun run dev
+```
+
