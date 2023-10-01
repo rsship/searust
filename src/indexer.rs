@@ -79,16 +79,12 @@ impl Model {
     ) -> Result<(), ()> {
         if let Some(doc) = self.docs.get(file_path) {
             if doc.last_modified >= last_modified {
-                println!("Already indexed");
                 return Ok(());
             }
 
             println!("file changed Reindexing {:?}", last_modified);
-
             self.remove_doc(file_path);
         }
-
-        println!("Indexing {path}", path = file_path.display());
 
         let mut tf = TermFreq::new();
         for token in lexer::Lexer::new(content) {
@@ -142,7 +138,6 @@ impl Model {
 
         let file = File::create(file_path)?;
         serde_json::to_writer(BufWriter::new(file), self)?;
-        println!("Saving Model Done");
 
         Ok(())
     }
