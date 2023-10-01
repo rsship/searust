@@ -5,6 +5,7 @@ mod util;
 
 use config::*;
 use indexer::Model;
+use std::env;
 use std::error;
 use std::fmt;
 use std::path::Path;
@@ -25,9 +26,10 @@ impl fmt::Display for CustomErr {
 impl error::Error for CustomErr {}
 
 fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "127.0.0.1:6969";
-    println!("\n Listenning on port  {addr} \n");
-    let server = Server::http(addr).unwrap();
+    let addr = env::var("ADDRESS").unwrap_or("127.0.0.1:6969".to_string());
+    let server = Server::http(&addr).unwrap();
+
+    println!("\n\n serve up and runnin on {} \n\n", addr);
 
     for mut request in server.incoming_requests() {
         match request.method() {
