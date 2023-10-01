@@ -29,7 +29,7 @@ fn serve(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let addr = env::var("ADDRESS").unwrap_or("127.0.0.1:6969".to_string());
     let server = Server::http(&addr).unwrap();
 
-    println!("\n serve up and runnin on {} \n", addr);
+    println!("\n\n serve up and runnin on {} \n\n", addr);
 
     for mut request in server.incoming_requests() {
         match request.method() {
