@@ -1,6 +1,7 @@
 mod config;
 mod indexer;
 mod lexer;
+mod parser;
 mod util;
 
 use config::*;
