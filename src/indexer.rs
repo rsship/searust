@@ -1,6 +1,5 @@
-use super::util;
-
 use super::lexer;
+use super::parser;
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -31,13 +30,6 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new() -> Self {
-        Self {
-            docs: HashMap::new(),
-            df: HashMap::new(),
-        }
-    }
-
     pub fn walk_dir(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         'looper: for entry in fs::read_dir(dir_path)? {
             let entry = entry?;
@@ -47,15 +39,24 @@ impl Model {
                 continue 'looper;
             }
 
-            let metadata = dir_path.metadata().map_err(|_| "couldn't get metadata")?;
+            let metadata = path.metadata().map_err(|_| "couldn't get metadata")?;
             let last_modified = metadata.modified()?;
 
-            if let Ok(content) = util::read_entire_file(&path) {
-                let content = content.chars().collect::<Vec<_>>();
-                self.add_doc(&path, &content, last_modified)
-                    .map_err(|err| format!("got an error: {:?}", err))?;
-            } else {
-                println!("Unknown format: {path}", path = path.display());
+            if let Some(ext) = path.extension() {
+                let ext = ext.to_str().unwrap();
+                match ext {
+                    "xml" | "xhtml" => {
+                        parser::parse_xml(&path, |content| {
+                            self.add_doc(&path, &content, last_modified).unwrap();
+                        })?;
+                    }
+                    "pdf" => {
+                        parser::parse_pdf(dir_path);
+                    }
+                    &_ => {
+                        continue;
+                    }
+                }
             }
         }
         Ok(())
