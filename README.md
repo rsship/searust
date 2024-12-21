@@ -1,4 +1,5 @@
 # SeaRust (local search engine)
+its an local search engine based tf-idf rust implementation
 
 
 ```bash
